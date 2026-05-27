@@ -3,7 +3,7 @@ import {
   query, where, orderBy, limit,
   onSnapshot, serverTimestamp,
 } from "firebase/firestore";
-import { db, storage, ref, uploadBytesResumable, getDownloadURL } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 
 const MESSAGE_LIMIT = 50;
 
@@ -31,21 +31,27 @@ export async function sendMessage(groupId, channelId, uid, displayName, text, me
   return ref.id;
 }
 
-export function uploadMedia(file, groupId, channelId, onProgress) {
-  const path = `chat-media/${groupId}/${channelId}/${Date.now()}_${file.name}`;
-  const storageRef = ref(storage, path);
-  const task = uploadBytesResumable(storageRef, file);
+export async function uploadMedia(file, groupId, channelId, onProgress) {
+  const formData = new FormData();
+  formData.append("files", file);
 
+  const xhr = new XMLHttpRequest();
   return new Promise((resolve, reject) => {
-    task.on("state_changed",
-      (snap) => onProgress?.(snap.bytesTransferred / snap.totalBytes),
-      reject,
-      async () => {
-        const url = await getDownloadURL(task.snapshot.ref);
-        const type = file.type.startsWith("video/") ? "video" : "image";
-        resolve({ url, type, name: file.name });
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress?.(e.loaded / e.total);
+    };
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        const data = JSON.parse(xhr.responseText);
+        resolve(data.files[0]);
+      } else {
+        reject(new Error("upload failed"));
       }
-    );
+    };
+    xhr.onerror = () => reject(new Error("upload failed"));
+    xhr.open("POST", `${process.env.NEXT_PUBLIC_UPLOAD_URL}/upload`);
+    xhr.setRequestHeader("x-api-key", process.env.NEXT_PUBLIC_UPLOAD_KEY);
+    xhr.send(formData);
   });
 }
 
