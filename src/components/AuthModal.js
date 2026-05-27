@@ -14,6 +14,16 @@ export default function AuthModal({ onClose }) {
   const [sent, setSent] = useState(false);
   const { refreshProfile } = useAuth();
 
+  async function handleResend() {
+    setLoading(true);
+    try {
+      const { sendEmailVerification: send } = await import("@/lib/firebase");
+      const { auth } = await import("@/lib/firebase");
+      if (auth.currentUser) await send(auth.currentUser);
+    } catch {}
+    setLoading(false);
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
@@ -22,7 +32,7 @@ export default function AuthModal({ onClose }) {
       if (mode === "signup") {
         if (!displayName.trim()) { setError("need a name"); setLoading(false); return; }
         const user = await signUp(email, password, displayName.trim());
-        await sendEmailVerification(user);
+        try { await sendEmailVerification(user); } catch {}
         setSent(true);
       } else {
         await logIn(email, password);
@@ -48,11 +58,14 @@ export default function AuthModal({ onClose }) {
             <span className={styles.tag}>check your email</span>
             <button className={styles.close} onClick={onClose}>✕</button>
           </div>
-          <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6, marginBottom: 8 }}>
-            we sent a verification link to <strong style={{ color: "var(--text)" }}>{email}</strong>.
+          <p className={styles.sentText}>
+            we sent a verification link to <strong className={styles.sentEmail}>{email}</strong>.
           </p>
-          <p style={{ fontSize: 12, color: "var(--muted2)", lineHeight: 1.6 }}>
-            click it, then log back in.
+          <p className={styles.sentHint}>
+            didn&apos;t get it?{` `}
+            <button onClick={handleResend} className={styles.resendBtn}>
+              resend
+            </button>
           </p>
         </div>
       </div>
