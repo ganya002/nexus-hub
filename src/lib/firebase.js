@@ -14,6 +14,7 @@ import {
   serverTimestamp, increment, arrayUnion, arrayRemove, runTransaction,
   deleteDoc, updateDoc, addDoc, onSnapshot,
 } from "firebase/firestore";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -27,7 +28,8 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export { sendEmailVerification };
+export const storage = getStorage(app);
+export { sendEmailVerification, ref, uploadBytesResumable, getDownloadURL };
 
 export async function signUp(email, password, displayName) {
   const cred = await createUserWithEmailAndPassword(auth, email, password);
