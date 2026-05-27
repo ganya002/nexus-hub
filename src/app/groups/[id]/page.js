@@ -16,6 +16,7 @@ export default function GroupPage() {
   const [channels, setChannels] = useState([]);
   const [showNewChannel, setShowNewChannel] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
+  const [newChannelType, setNewChannelType] = useState("text");
 
   useEffect(() => {
     if (!loading && !user) router.push("/");
@@ -35,10 +36,15 @@ export default function GroupPage() {
 
   async function handleCreateChannel() {
     if (!newChannelName.trim()) return;
-    const channelId = await createChannel(id, newChannelName.trim());
+    const channelId = await createChannel(id, newChannelName.trim(), newChannelType);
     setNewChannelName("");
+    setNewChannelType("text");
     setShowNewChannel(false);
-    router.push(`/groups/${id}/chat/${channelId}`);
+    if (newChannelType === "voice") {
+      router.push(`/groups/${id}/voice`);
+    } else {
+      router.push(`/groups/${id}/chat/${channelId}`);
+    }
   }
 
   if (loading || !user || !group) return null;
@@ -68,36 +74,61 @@ export default function GroupPage() {
         </div>
 
         {showNewChannel && (
-          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
             <input
               type="text" value={newChannelName} onChange={e => setNewChannelName(e.target.value)}
               placeholder="channel name" autoFocus
               onKeyDown={e => e.key === "Enter" && handleCreateChannel()}
               style={{
-                flex: 1, background: "var(--bg3)", border: "1px solid var(--border)",
+                width: "100%", background: "var(--bg3)", border: "1px solid var(--border)",
                 color: "var(--text)", padding: "6px 10px", fontFamily: "var(--mono)", fontSize: 12, outline: "none",
               }}
             />
-            <button onClick={handleCreateChannel} style={{
-              fontSize: 11, padding: "6px 10px", border: "1px solid var(--border)",
-              color: "var(--text)", cursor: "pointer", background: "var(--bg3)", fontFamily: "var(--mono)",
-            }}>
-              create
-            </button>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 4 }}>
+                <button type="button" onClick={() => setNewChannelType("text")} style={{
+                  fontSize: 10, padding: "4px 8px", border: "1px solid var(--border)",
+                  background: newChannelType === "text" ? "var(--border)" : "none",
+                  color: newChannelType === "text" ? "var(--text)" : "var(--muted)",
+                  cursor: "pointer", fontFamily: "var(--mono)",
+                }}>
+                  text
+                </button>
+                <button type="button" onClick={() => setNewChannelType("voice")} style={{
+                  fontSize: 10, padding: "4px 8px", border: "1px solid var(--border)",
+                  background: newChannelType === "voice" ? "var(--border)" : "none",
+                  color: newChannelType === "voice" ? "var(--text)" : "var(--muted)",
+                  cursor: "pointer", fontFamily: "var(--mono)",
+                }}>
+                  voice
+                </button>
+              </div>
+              <button onClick={handleCreateChannel} style={{
+                fontSize: 11, padding: "6px 10px", border: "1px solid var(--border)",
+                color: "var(--text)", cursor: "pointer", background: "var(--bg3)", fontFamily: "var(--mono)",
+                marginLeft: "auto",
+              }}>
+                create
+              </button>
+            </div>
           </div>
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {channels.map(ch => (
-            <Link key={ch.id} href={`/groups/${id}/chat/${ch.id}`} style={{
-              padding: "10px 12px", background: "var(--bg2)", border: "1px solid var(--border)",
-              textDecoration: "none", display: "flex", justifyContent: "space-between",
-              fontSize: 13, color: "var(--text)",
-            }}>
-              <span># {ch.name}</span>
-              <span style={{ fontSize: 10, color: "var(--muted2)" }}>→</span>
-            </Link>
-          ))}
+          {channels.map(ch => {
+            const isVoice = ch.type === "voice";
+            const href = isVoice ? `/groups/${id}/voice` : `/groups/${id}/chat/${ch.id}`;
+            return (
+              <Link key={ch.id} href={href} style={{
+                padding: "10px 12px", background: "var(--bg2)", border: "1px solid var(--border)",
+                textDecoration: "none", display: "flex", justifyContent: "space-between",
+                fontSize: 13, color: "var(--text)",
+              }}>
+                <span>{isVoice ? "♪" : "#"} {ch.name}</span>
+                <span style={{ fontSize: 10, color: "var(--muted2)" }}>{isVoice ? "voice" : "→"}</span>
+              </Link>
+            );
+          })}
         </div>
       </div>
 

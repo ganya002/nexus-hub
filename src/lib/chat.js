@@ -7,9 +7,10 @@ import { db } from "@/lib/firebase";
 
 const MESSAGE_LIMIT = 50;
 
-export async function createChannel(groupId, name) {
+export async function createChannel(groupId, name, type = "text") {
   const ref = await addDoc(collection(db, "groups", groupId, "channels"), {
     name,
+    type,
     createdAt: serverTimestamp(),
   });
   return ref.id;

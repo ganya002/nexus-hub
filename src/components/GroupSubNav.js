@@ -6,6 +6,8 @@ const TABS = [
   { href: "/chat", label: "chat" },
   { href: "/links", label: "links" },
   { href: "/voice", label: "voice" },
+  { href: "/todos", label: "todos" },
+  { href: "/gallery", label: "gallery" },
 ];
 
 export default function GroupSubNav({ groupId }) {
@@ -14,6 +16,7 @@ export default function GroupSubNav({ groupId }) {
   return (
     <nav style={{
       display: "flex", gap: 0, borderBottom: "1px solid var(--border)", marginBottom: 24,
+      overflowX: "auto", whiteSpace: "nowrap", WebkitOverflowScrolling: "touch",
     }}>
       {TABS.map(t => {
         const full = `/groups/${groupId}${t.href}`;
