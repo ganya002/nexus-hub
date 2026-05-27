@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter, useParams } from "next/navigation";
 import { getInvite, useInvite as consumeInvite, getGroup, addMember, getUserProfile } from "@/lib/firebase";
+import { createNotification } from "@/lib/notifications";
 
 export default function JoinPage() {
   const { user, loading } = useAuth();
@@ -29,7 +30,16 @@ export default function JoinPage() {
     try {
       await consumeInvite(code);
       const profile = await getUserProfile(user.uid);
-      await addMember(invite.groupId, user.uid, profile?.displayName || user.displayName || "unknown");
+      const displayName = profile?.displayName || user.displayName || "someone";
+      await addMember(invite.groupId, user.uid, displayName);
+      if (invite.createdBy && invite.createdBy !== user.uid) {
+        createNotification(invite.createdBy, {
+          type: "member_joined",
+          title: `new member in ${group.name}`,
+          body: `${displayName} joined the group`,
+          link: `/groups/${invite.groupId}`,
+        });
+      }
       setJoined(true);
       setTimeout(() => router.push(`/groups/${invite.groupId}`), 1000);
     } catch (err) {

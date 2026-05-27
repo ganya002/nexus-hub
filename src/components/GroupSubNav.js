@@ -4,6 +4,8 @@ import Link from "next/link";
 
 const TABS = [
   { href: "/chat", label: "chat" },
+  { href: "/events", label: "events" },
+  { href: "/polls", label: "polls" },
   { href: "/links", label: "links" },
   { href: "/voice", label: "voice" },
   { href: "/todos", label: "todos" },
