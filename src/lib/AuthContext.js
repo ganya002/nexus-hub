@@ -1,30 +1,40 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
-import { onAuth, getMembers } from "@/lib/firebase";
+import { onAuth } from "@/lib/firebase";
 
 const Ctx = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined);
-  const [members, setMembers] = useState([]);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     return onAuth(async (u) => {
       setUser(u);
       if (u) {
-        const m = await getMembers();
-        setMembers(m);
+        const { getUserProfile } = await import("@/lib/firebase");
+        const p = await getUserProfile(u.uid);
+        setProfile(p);
+      } else {
+        setProfile(null);
       }
+      setLoading(false);
     });
   }, []);
 
-  async function refreshMembers() {
-    const m = await getMembers();
-    setMembers(m);
+  async function refreshProfile() {
+    if (!user) return;
+    const { getUserProfile } = await import("@/lib/firebase");
+    const p = await getUserProfile(user.uid);
+    setProfile(p);
   }
 
+  const needsVerification = user && !user.emailVerified;
+  const needsUsername = user && user.emailVerified && profile && !profile.username;
+
   return (
-    <Ctx.Provider value={{ user, members, refreshMembers }}>
+    <Ctx.Provider value={{ user, profile, loading, needsVerification, needsUsername, refreshProfile }}>
       {children}
     </Ctx.Provider>
   );
