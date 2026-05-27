@@ -12,7 +12,7 @@ import {
   getFirestore, doc, setDoc, getDoc, getDocs,
   collection, collectionGroup, query, where, orderBy, limit,
   serverTimestamp, increment, arrayUnion, arrayRemove, runTransaction,
-  deleteDoc, updateDoc,
+  deleteDoc, updateDoc, addDoc, onSnapshot,
 } from "firebase/firestore";
 
 const firebaseConfig = {
