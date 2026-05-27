@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter, useParams } from "next/navigation";
 import { getGroup, getMembers } from "@/lib/firebase";
+import InviteControls from "@/components/InviteControls";
 
 export default function GroupPage() {
   const { user, loading } = useAuth();
@@ -18,7 +19,7 @@ export default function GroupPage() {
   useEffect(() => {
     getGroup(id).then(g => { if (!g) router.push("/groups"); else setGroup(g); });
     getMembers(id).then(setMembers);
-  }, [id]);
+  }, [id, router]);
 
   if (loading || !user || !group) return null;
 
@@ -45,6 +46,14 @@ export default function GroupPage() {
             <span style={{ fontSize: 11, color: "var(--muted)" }}>{m.displayName}</span>
           </div>
         ))}
+      </div>
+
+      {/* invite section */}
+      <div style={{ marginTop: 32, padding: 20, border: "1px solid var(--border)", background: "var(--bg2)" }}>
+        <p style={{ fontSize: 11, color: "var(--muted)", marginBottom: 12, letterSpacing: "0.04em" }}>
+          {'// invite'}
+        </p>
+        <InviteControls groupId={id} />
       </div>
     </div>
   );
