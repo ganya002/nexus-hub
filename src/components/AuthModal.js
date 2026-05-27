@@ -40,7 +40,7 @@ export default function AuthModal({ onClose }) {
     <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <span className={styles.tag}>// nexus</span>
+          <span className={styles.tag}>{'// nexus'}</span>
           <button className={styles.close} onClick={onClose}>✕</button>
         </div>
 

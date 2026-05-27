@@ -44,7 +44,7 @@ export default function Home() {
       </nav>
 
       <section className={styles.hero}>
-        <p className={styles.eyebrow}>// our little corner</p>
+        <p className={styles.eyebrow}>{'// our little corner'}</p>
         <h1 className={styles.title}>
           nexus
         </h1>
@@ -57,7 +57,7 @@ export default function Home() {
 
       {members.length > 0 && (
         <section className={styles.members}>
-          <p className={styles.sectionLabel}>// members</p>
+          <p className={styles.sectionLabel}>{'// members'}</p>
           <div className={styles.bubbles}>
             {members.map((m) => (
               <div key={m.uid} className={styles.bubble} title={m.displayName}>
@@ -75,7 +75,7 @@ export default function Home() {
       )}
 
       <section className={styles.sites}>
-        <p className={styles.sectionLabel}>// spaces</p>
+        <p className={styles.sectionLabel}>{'// spaces'}</p>
         <div className={styles.grid}>
           {SITES.map((s) => (
             <a key={s.slug} href={`/${s.slug}`} className={styles.card}>
