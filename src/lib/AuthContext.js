@@ -12,22 +12,31 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     return onAuth(async (u) => {
       setUser(u);
-      if (u) {
-        const { getUserProfile } = await import("@/lib/firebase");
-        const p = await getUserProfile(u.uid);
-        setProfile(p);
-      } else {
-        setProfile(null);
+      try {
+        if (u) {
+          const { getUserProfile } = await import("@/lib/firebase");
+          const p = await getUserProfile(u.uid);
+          setProfile(p);
+        } else {
+          setProfile(null);
+        }
+      } catch (err) {
+        console.error("auth callback error:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
   }, []);
 
   async function refreshProfile() {
     if (!user) return;
-    const { getUserProfile } = await import("@/lib/firebase");
-    const p = await getUserProfile(user.uid);
-    setProfile(p);
+    try {
+      const { getUserProfile } = await import("@/lib/firebase");
+      const p = await getUserProfile(user.uid);
+      setProfile(p);
+    } catch (err) {
+      console.error("refreshProfile error:", err);
+    }
   }
 
   const needsVerification = user && !user.emailVerified;
