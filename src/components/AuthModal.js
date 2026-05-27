@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { signUp, logIn } from "@/lib/firebase";
+import { signUp, logIn, sendEmailVerification } from "@/lib/firebase";
 import { useAuth } from "@/lib/AuthContext";
 import styles from "./AuthModal.module.css";
 
@@ -11,7 +11,8 @@ export default function AuthModal({ onClose }) {
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { refreshMembers } = useAuth();
+  const [sent, setSent] = useState(false);
+  const { refreshProfile } = useAuth();
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -20,20 +21,42 @@ export default function AuthModal({ onClose }) {
     try {
       if (mode === "signup") {
         if (!displayName.trim()) { setError("need a name"); setLoading(false); return; }
-        await signUp(email, password, displayName.trim());
-        await refreshMembers();
+        const user = await signUp(email, password, displayName.trim());
+        await sendEmailVerification(user);
+        setSent(true);
       } else {
         await logIn(email, password);
+        refreshProfile();
+        onClose();
       }
-      onClose();
     } catch (err) {
       const msg = err.code === "auth/email-already-in-use" ? "that email's taken"
         : err.code === "auth/invalid-credential" ? "wrong email or password"
         : err.code === "auth/weak-password" ? "password too weak (6+ chars)"
+        : err.code === "auth/too-many-requests" ? "too many attempts, try later"
         : err.message;
       setError(msg);
     }
     setLoading(false);
+  }
+
+  if (sent) {
+    return (
+      <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div className={styles.modal}>
+          <div className={styles.header}>
+            <span className={styles.tag}>check your email</span>
+            <button className={styles.close} onClick={onClose}>✕</button>
+          </div>
+          <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6, marginBottom: 8 }}>
+            we sent a verification link to <strong style={{ color: "var(--text)" }}>{email}</strong>.
+          </p>
+          <p style={{ fontSize: 12, color: "var(--muted2)", lineHeight: 1.6 }}>
+            click it, then log back in.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
