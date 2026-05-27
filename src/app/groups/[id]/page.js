@@ -31,7 +31,7 @@ export default function GroupPage() {
         setChannels(c);
       }
     });
-  }, [id]);
+  }, [id, router]);
 
   async function handleCreateChannel() {
     if (!newChannelName.trim()) return;
