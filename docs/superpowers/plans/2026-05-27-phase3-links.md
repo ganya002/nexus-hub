@@ -1,3 +1,74 @@
+# Phase 3 — Links Space Implementation Plan
+
+> **For agentic workers:** Use subagent-driven-development or executing-plans.
+
+**Goal:** Shared link board per group — submit URLs with title + optional note, sorted newest first.
+
+**Tech Stack:** Next.js 14, Firestore, inline styles
+
+---
+
+## Tasks
+
+### Task 1: Create links lib
+
+**Files:**
+- Create: `src/lib/links.js`
+
+- [ ] **Step 1: Create src/lib/links.js**
+
+```js
+import {
+  collection, addDoc, getDocs,
+  query, orderBy, limit,
+  serverTimestamp,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
+
+const LINK_LIMIT = 50;
+
+export async function addLink(groupId, uid, url, title, note = "") {
+  let hostname = "";
+  try { hostname = new URL(url).hostname.replace("www.", ""); } catch {}
+  const ref = await addDoc(collection(db, "groups", groupId, "links"), {
+    uid,
+    url,
+    title,
+    note,
+    hostname,
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+export async function getLinks(groupId) {
+  const q = query(
+    collection(db, "groups", groupId, "links"),
+    orderBy("createdAt", "desc"),
+    limit(LINK_LIMIT)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/lib/links.js
+git commit -m "feat: add link helpers"
+```
+
+---
+
+### Task 2: Build the links page
+
+**Files:**
+- Modify: `src/app/groups/[id]/links/page.js`
+
+- [ ] **Step 1: Replace placeholder with links UI**
+
+```js
 "use client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
@@ -97,3 +168,18 @@ export default function LinksPage() {
     </div>
   );
 }
+```
+
+- [ ] **Step 2: Verify build**
+
+```bash
+npm run build && npm run lint
+```
+
+- [ ] **Step 3: Commit and push**
+
+```bash
+git add src/lib/links.js src/app/groups/\[id\]/links/page.js
+git commit -m "feat: add links space with submission and display"
+git push
+```
