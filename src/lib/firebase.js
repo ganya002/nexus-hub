@@ -135,6 +135,33 @@ export async function getMembers(groupId) {
   return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
 }
 
+export async function updateMemberRole(groupId, uid, role) {
+  await updateDoc(doc(db, "groups", groupId, "members", uid), { role });
+}
+
+export async function updateGroup(groupId, data) {
+  await updateDoc(doc(db, "groups", groupId), data);
+}
+
+export async function deleteGroup(groupId) {
+  const [members, channels] = await Promise.all([
+    getDocs(collection(db, "groups", groupId, "members")),
+    getDocs(collection(db, "groups", groupId, "channels")),
+  ]);
+  await Promise.all([
+    ...members.docs.map(d => updateDoc(doc(db, "users", d.id), { groupIds: arrayRemove(groupId) })),
+    ...members.docs.map(d => deleteDoc(d.ref)),
+    ...channels.docs.map(async (ch) => {
+      const msgs = await getDocs(collection(db, "groups", groupId, "channels", ch.id, "messages"));
+      await Promise.all(msgs.docs.map(m => deleteDoc(m.ref)));
+      await deleteDoc(ch.ref);
+    }),
+  ]);
+  const invites = await getDocs(query(collection(db, "invites"), where("groupId", "==", groupId)));
+  await Promise.all(invites.docs.map(d => deleteDoc(d.ref)));
+  await deleteDoc(doc(db, "groups", groupId));
+}
+
 export async function getUserGroups(uid) {
   const userSnap = await getDoc(doc(db, "users", uid));
   if (!userSnap.exists()) return [];

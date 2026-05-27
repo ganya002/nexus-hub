@@ -1,7 +1,7 @@
 import {
-  doc, setDoc, deleteDoc, getDoc, getDocs,
+  doc, setDoc, deleteDoc, getDocs,
   collection, query, onSnapshot, serverTimestamp,
-  addDoc, updateDoc,
+  addDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -26,50 +26,45 @@ export async function leaveChannel(groupId, channelId, uid) {
 }
 
 export function subscribeParticipants(groupId, channelId, onParticipants) {
-  const q = query(collection(db, "groups", groupId, "channels", channelId, "participants"));
-  return onSnapshot(q, (snap) => {
+  const ref = collection(db, "groups", groupId, "channels", channelId, "participants");
+  return onSnapshot(ref, (snap) => {
     const list = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
     onParticipants(list);
   });
 }
 
 // ── signaling ──
+// Data model:
+//   signaling/{uid}/offers/{fromUid}  — doc (8 segments)
+//   signaling/{uid}/answers/{fromUid} — doc (8 segments)
+//   signaling/{uid}/ice/{autoId}      — doc (7 segments)
+// All paths have odd segment counts = valid collection refs
 
-function signalingRef(groupId, channelId, uid) {
-  return collection(db, "groups", groupId, "channels", channelId, "signaling", uid);
+function signalingColl(groupId, channelId) {
+  return collection(db, "groups", groupId, "channels", channelId, "signaling");
 }
 
 export async function sendOffer(groupId, channelId, fromUid, toUid, sdp) {
-  await setDoc(doc(signalingRef(groupId, channelId, toUid), "offers", fromUid), { sdp });
+  await setDoc(doc(signalingColl(groupId, channelId), toUid, "offers", fromUid), { sdp });
 }
 
 export async function sendAnswer(groupId, channelId, fromUid, toUid, sdp) {
-  await setDoc(doc(signalingRef(groupId, channelId, toUid), "answers", fromUid), { sdp });
+  await setDoc(doc(signalingColl(groupId, channelId), toUid, "answers", fromUid), { sdp });
 }
 
 export async function sendIceCandidate(groupId, channelId, fromUid, toUid, candidate) {
-  await addDoc(collection(signalingRef(groupId, channelId, toUid), "ice"), {
+  if (!candidate || !candidate.candidate) return;
+  await addDoc(collection(signalingColl(groupId, channelId), toUid, "ice"), {
     fromUid,
     candidate: candidate.candidate,
-    sdpMid: candidate.sdpMid,
-    sdpMLineIndex: candidate.sdpMLineIndex,
-  });
-}
-
-export function subscribeIceCandidates(groupId, channelId, uid, onIce) {
-  const q = query(collection(signalingRef(groupId, channelId, uid), "ice"));
-  return onSnapshot(q, (snap) => {
-    snap.docChanges().forEach(change => {
-      if (change.type === "added") {
-        onIce(change.doc.data().fromUid, change.doc.data());
-      }
-    });
+    sdpMid: candidate.sdpMid || "",
+    sdpMLineIndex: candidate.sdpMLineIndex ?? 0,
   });
 }
 
 export function subscribeOffers(groupId, channelId, uid, onOffer) {
-  const q = query(collection(signalingRef(groupId, channelId, uid), "offers"));
-  return onSnapshot(q, (snap) => {
+  const ref = collection(signalingColl(groupId, channelId), uid, "offers");
+  return onSnapshot(ref, (snap) => {
     snap.docChanges().forEach(change => {
       if (change.type === "added") {
         onOffer(change.doc.id, change.doc.data().sdp);
@@ -79,8 +74,8 @@ export function subscribeOffers(groupId, channelId, uid, onOffer) {
 }
 
 export function subscribeAnswers(groupId, channelId, uid, onAnswer) {
-  const q = query(collection(signalingRef(groupId, channelId, uid), "answers"));
-  return onSnapshot(q, (snap) => {
+  const ref = collection(signalingColl(groupId, channelId), uid, "answers");
+  return onSnapshot(ref, (snap) => {
     snap.docChanges().forEach(change => {
       if (change.type === "added") {
         onAnswer(change.doc.id, change.doc.data().sdp);
@@ -89,10 +84,21 @@ export function subscribeAnswers(groupId, channelId, uid, onAnswer) {
   });
 }
 
+export function subscribeIceCandidates(groupId, channelId, uid, onIce) {
+  const ref = collection(signalingColl(groupId, channelId), uid, "ice");
+  return onSnapshot(ref, (snap) => {
+    snap.docChanges().forEach(change => {
+      if (change.type === "added") {
+        onIce(change.doc.data().fromUid, change.doc.data());
+      }
+    });
+  });
+}
+
 async function cleanupSignaling(groupId, channelId, uid) {
-  const ref = signalingRef(groupId, channelId, uid);
   for (const subcol of ["offers", "answers", "ice"]) {
-    const snap = await getDocs(collection(ref, subcol));
+    const ref = collection(signalingColl(groupId, channelId), uid, subcol);
+    const snap = await getDocs(ref);
     await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
   }
 }
