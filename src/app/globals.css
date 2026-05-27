@@ -51,6 +51,8 @@ button {
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
+body { padding-bottom: 48px; }
+
 body::after {
   position: fixed;
   inset: 0;
