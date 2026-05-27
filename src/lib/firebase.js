@@ -11,7 +11,7 @@ import {
 import {
   getFirestore, doc, setDoc, getDoc, getDocs,
   collection, collectionGroup, query, where, orderBy, limit,
-  serverTimestamp, increment,
+  serverTimestamp, increment, arrayUnion, arrayRemove, runTransaction,
   deleteDoc, updateDoc,
 } from "firebase/firestore";
 
@@ -73,13 +73,13 @@ export async function updateUserProfile(uid, data) {
   await updateDoc(doc(db, "users", uid), data);
 }
 
-export async function checkUsername(username) {
-  const snap = await getDoc(doc(db, "usernames", username.toLowerCase()));
-  return !snap.exists();
-}
-
 export async function reserveUsername(username, uid) {
-  await setDoc(doc(db, "usernames", username.toLowerCase()), { uid });
+  const ref = doc(db, "usernames", username.toLowerCase());
+  await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(ref);
+    if (snap.exists()) throw new Error("username taken");
+    transaction.set(ref, { uid });
+  });
 }
 
 // ── groups ──
@@ -115,12 +115,18 @@ export async function addMember(groupId, uid, displayName, role = "member") {
   await updateDoc(doc(db, "groups", groupId), {
     memberCount: increment(1),
   });
+  await updateDoc(doc(db, "users", uid), {
+    groupIds: arrayUnion(groupId),
+  });
 }
 
 export async function removeMember(groupId, uid) {
   await deleteDoc(doc(db, "groups", groupId, "members", uid));
   await updateDoc(doc(db, "groups", groupId), {
     memberCount: increment(-1),
+  });
+  await updateDoc(doc(db, "users", uid), {
+    groupIds: arrayRemove(groupId),
   });
 }
 
@@ -130,20 +136,20 @@ export async function getMembers(groupId) {
 }
 
 export async function getUserGroups(uid) {
-  const snap = await getDocs(collection(db, "groups"));
-  const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  const memberSnap = await getDocs(collectionGroup(db, "members"));
-  const groupIds = memberSnap.docs
-    .filter(d => d.id === uid)
-    .map(d => d.ref.parent.parent?.id)
-    .filter(Boolean);
-  return all.filter(g => groupIds.includes(g.id));
+  const userSnap = await getDoc(doc(db, "users", uid));
+  if (!userSnap.exists()) return [];
+  const groupIds = userSnap.data().groupIds || [];
+  if (groupIds.length === 0) return [];
+  const groups = await Promise.all(
+    groupIds.map(id => getGroup(id))
+  );
+  return groups.filter(Boolean);
 }
 
 // ── invites ──
 
 export async function createInvite(groupId, createdBy, expiresAt) {
-  const code = Math.random().toString(36).slice(2, 8).toUpperCase();
+  const code = crypto.randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase();
   await setDoc(doc(db, "invites", code), {
     groupId,
     createdBy,
@@ -161,5 +167,9 @@ export async function getInvite(code) {
 
 export async function useInvite(code) {
   const ref = doc(db, "invites", code.toUpperCase());
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error("invite not found");
+  const data = snap.data();
+  if (data.expiresAt?.toMillis?.() < Date.now()) throw new Error("invite has expired");
   await updateDoc(ref, { uses: increment(1) });
 }
