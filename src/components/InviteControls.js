@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useAuth } from "@/lib/AuthContext";
 import { createInvite } from "@/lib/firebase";
 
 const DURATIONS = [
@@ -10,6 +11,7 @@ const DURATIONS = [
 ];
 
 export default function InviteControls({ groupId }) {
+  const { user } = useAuth();
   const [code, setCode] = useState(null);
   const [duration, setDuration] = useState(86400000);
   const [loading, setLoading] = useState(false);
@@ -17,7 +19,7 @@ export default function InviteControls({ groupId }) {
   async function generate() {
     setLoading(true);
     const expiresAt = duration === 0 ? null : new Date(Date.now() + duration);
-    const c = await createInvite(groupId, "owner", expiresAt);
+    const c = await createInvite(groupId, user?.uid || "unknown", expiresAt);
     setCode(c);
     setLoading(false);
   }

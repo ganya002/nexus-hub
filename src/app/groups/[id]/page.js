@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { useRouter, useParams } from "next/navigation";
-import { getGroup, getMembers, updateMemberRole, updateGroup, deleteGroup } from "@/lib/firebase";
+import { getGroup, getMembers, updateMemberRole, updateGroup, deleteGroup, removeMember } from "@/lib/firebase";
 import { getChannels, createChannel } from "@/lib/chat";
 import InviteControls from "@/components/InviteControls";
 import Link from "next/link";
