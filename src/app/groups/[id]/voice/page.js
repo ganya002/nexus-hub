@@ -88,9 +88,19 @@ export default function VoicePage() {
     const channelId = joinedChannel;
 
     const unsubOffers = subscribeOffers(id, channelId, user.uid, async (fromUid, sdp) => {
-      if (connectedUidsRef.current.has(fromUid)) return;
-      const pc = connectToPeer(fromUid, channelId);
-      if (pc && !pc.localDescription) {
+      let pc = peerConnectionsRef.current[fromUid];
+      if (!pc) {
+        pc = connectToPeer(fromUid, channelId);
+        const answerSdp = await handleOffer(pc, sdp);
+        await sendAnswer(id, channelId, user.uid, fromUid, answerSdp);
+      } else if (pc.localDescription) {
+        // Glare: both sides sent offers. Lower UID is "polite" and rolls back.
+        if (user.uid < fromUid) {
+          await pc.setLocalDescription({ type: "rollback" });
+          const answerSdp = await handleOffer(pc, sdp);
+          await sendAnswer(id, channelId, user.uid, fromUid, answerSdp);
+        }
+      } else {
         const answerSdp = await handleOffer(pc, sdp);
         await sendAnswer(id, channelId, user.uid, fromUid, answerSdp);
       }
