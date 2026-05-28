@@ -31,7 +31,7 @@ export async function sendMessage(groupId, channelId, uid, displayName, text, me
   return ref.id;
 }
 
-const UPLOAD_URL = process.env.NEXT_PUBLIC_UPLOAD_URL || "https://all-nights-build.loca.lt";
+const UPLOAD_URL = process.env.NEXT_PUBLIC_UPLOAD_URL || "https://polite-plums-play.loca.lt";
 const UPLOAD_KEY = process.env.NEXT_PUBLIC_UPLOAD_KEY || "test123";
 
 export async function uploadMedia(file, groupId, channelId, onProgress) {
