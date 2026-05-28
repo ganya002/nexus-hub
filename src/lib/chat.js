@@ -31,6 +31,9 @@ export async function sendMessage(groupId, channelId, uid, displayName, text, me
   return ref.id;
 }
 
+const UPLOAD_URL = process.env.NEXT_PUBLIC_UPLOAD_URL || "https://stale-otters-melt.loca.lt";
+const UPLOAD_KEY = process.env.NEXT_PUBLIC_UPLOAD_KEY || "test123";
+
 export async function uploadMedia(file, groupId, channelId, onProgress) {
   const formData = new FormData();
   formData.append("files", file);
@@ -49,8 +52,8 @@ export async function uploadMedia(file, groupId, channelId, onProgress) {
       }
     };
     xhr.onerror = () => reject(new Error("upload failed"));
-    xhr.open("POST", `${process.env.NEXT_PUBLIC_UPLOAD_URL}/upload`);
-    xhr.setRequestHeader("x-api-key", process.env.NEXT_PUBLIC_UPLOAD_KEY);
+    xhr.open("POST", `${UPLOAD_URL}/upload`);
+    xhr.setRequestHeader("x-api-key", UPLOAD_KEY);
     xhr.send(formData);
   });
 }

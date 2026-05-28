@@ -52,13 +52,14 @@ export function subscribeDMMessages(dmId, onMessages) {
   });
 }
 
-export async function sendDMMessage(dmId, uid, text) {
+export async function sendDMMessage(dmId, uid, text, media = []) {
   const ref = await addDoc(
     collection(db, "dms", dmId, "messages"),
-    { uid, text, createdAt: serverTimestamp() }
+    { uid, text, media, createdAt: serverTimestamp() }
   );
+  const preview = media.length > 0 ? (text || (media[0].type === "video" ? "📹 video" : "📷 photo")) : text;
   await updateDoc(doc(db, "dms", dmId), {
-    lastMessage: text,
+    lastMessage: preview,
     lastMessageAt: serverTimestamp(),
   });
   return ref.id;
